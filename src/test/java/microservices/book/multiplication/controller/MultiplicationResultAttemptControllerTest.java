@@ -5,6 +5,7 @@ import microservices.book.multiplication.domain.Multiplication;
 import microservices.book.multiplication.domain.MultiplicationResultAttempt;
 import microservices.book.multiplication.domain.User;
 import microservices.book.multiplication.service.MultiplicationService;
+import org.assertj.core.util.Lists;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -17,9 +18,12 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -32,6 +36,8 @@ public class MultiplicationResultAttemptControllerTest {
     private MockMvc mvc;
 
     private JacksonTester<MultiplicationResultAttempt> jsonResult;
+
+    private JacksonTester<List<MultiplicationResultAttempt>> jsonResultAttemptList;
 
     @BeforeAll
     void setUp() {
@@ -46,6 +52,25 @@ public class MultiplicationResultAttemptControllerTest {
     @Test
     public void postResult_ok_notCorrect() throws Exception {
         genericParametrizedTest(false);
+    }
+
+    @Test
+    public void getUserStats() throws Exception {
+        User user = new User("John_Doe");
+        Multiplication multiplication = new Multiplication(50, 70);
+        MultiplicationResultAttempt attempt = new MultiplicationResultAttempt(user, multiplication, 3500, true);
+        List<MultiplicationResultAttempt> recentAttempts = Lists.newArrayList(attempt, attempt);
+        given(multiplicationService.getStatsForUser("John_Doe")).willReturn(recentAttempts);
+        // when
+        MockHttpServletResponse response = mvc.perform(
+                get("/results").param("alias", "John_Doe"))
+                .andReturn().getResponse();
+// then
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
+        assertThat(response.getContentAsString()).isEqualTo(
+                jsonResultAttemptList.write(
+                        recentAttempts
+                ).getJson());
     }
 
     void genericParametrizedTest(final boolean correct) throws Exception {

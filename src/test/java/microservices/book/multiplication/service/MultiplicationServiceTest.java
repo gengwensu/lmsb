@@ -5,12 +5,14 @@ import microservices.book.multiplication.domain.MultiplicationResultAttempt;
 import microservices.book.multiplication.domain.User;
 import microservices.book.multiplication.repository.MultiplicationResultAttemptRepository;
 import microservices.book.multiplication.repository.UserRepository;
+import org.assertj.core.util.Lists;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,8 +35,7 @@ public class MultiplicationServiceTest {
     void setup() {
         MockitoAnnotations.initMocks(this);
         multiplicationService =
-                new MultiplicationServiceImpl(randomGeneratorService, attemptRepository,
-                        userRepository);
+                new MultiplicationServiceImpl(randomGeneratorService, attemptRepository, userRepository);
     }
 
     @Test
@@ -69,6 +70,21 @@ public class MultiplicationServiceTest {
         boolean attemptResult = multiplicationService.checkAttempt(attempt);
         assertThat(attemptResult).isFalse();
         verify(attemptRepository).save(attempt);
+    }
+
+    @Test
+    public void retrieveStatsTest(){
+        Multiplication multiplication = new Multiplication(50, 60);
+        User user = new User("John_Doe");
+        MultiplicationResultAttempt attempt1 = new MultiplicationResultAttempt(user, multiplication, 3010, false);
+        MultiplicationResultAttempt attempt2 = new MultiplicationResultAttempt(user, multiplication, 3051, false);
+        List<MultiplicationResultAttempt> latestAttempts = Lists.newArrayList(attempt1, attempt2);
+        given(userRepository.findByAlias("Johm_Doe")).willReturn(Optional.empty());
+        given(attemptRepository.findTop5ByUserAliasOrderByIdDesc("John_Doe")).willReturn(latestAttempts);
+        //when
+        List<MultiplicationResultAttempt> latestAttemptResult=multiplicationService.getStatsForUser("John_Doe");
+        //Then
+        assertThat(latestAttemptResult).isEqualTo(latestAttempts);
     }
 
 }
