@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import microservices.book.multiplication.domain.Multiplication;
 import microservices.book.multiplication.domain.MultiplicationResultAttempt;
 import microservices.book.multiplication.domain.User;
+import microservices.book.multiplication.repository.MultiplicationRepository;
 import microservices.book.multiplication.repository.MultiplicationResultAttemptRepository;
 import microservices.book.multiplication.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -20,10 +21,7 @@ public class MultiplicationServiceImpl implements MultiplicationService {
     private final RandomGeneratorService randomGeneratorService;
     private final MultiplicationResultAttemptRepository attemptRepository;
     private final UserRepository userRepository;
-
-    /*public MultiplicationServiceImpl(RandomGeneratorService randomGeneratorService) {
-        this.randomGeneratorService = randomGeneratorService;
-    }*/
+    private final MultiplicationRepository multiplicationRepository;
 
     @Override
     public Multiplication createMultiplicationObjectWithTwoRandomNum() {
@@ -40,9 +38,13 @@ public class MultiplicationServiceImpl implements MultiplicationService {
         boolean isCorrect = attempt.getResultAttempt() ==
                 attempt.getMultiplication().getFactorA()
                         * attempt.getMultiplication().getFactorB();
+        Optional<Multiplication> multiplication = multiplicationRepository.findByFactorAAndFactorB(
+                attempt.getMultiplication().getFactorA(),
+                attempt.getMultiplication().getFactorB()
+        );
         MultiplicationResultAttempt checkedAttempt =
-                new MultiplicationResultAttempt(attempt.getUser(),
-                        attempt.getMultiplication(),
+                new MultiplicationResultAttempt(user.orElse(attempt.getUser()),
+                        multiplication.orElse(attempt.getMultiplication()),
                         attempt.getResultAttempt(),
                         isCorrect);
         attemptRepository.save(checkedAttempt);
