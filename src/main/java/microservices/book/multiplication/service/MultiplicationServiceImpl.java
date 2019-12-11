@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import microservices.book.multiplication.domain.Multiplication;
 import microservices.book.multiplication.domain.MultiplicationResultAttempt;
 import microservices.book.multiplication.domain.User;
+import microservices.book.multiplication.event.EventDispatcher;
+import microservices.book.multiplication.event.MultiplicationSolvedEvent;
 import microservices.book.multiplication.repository.MultiplicationRepository;
 import microservices.book.multiplication.repository.MultiplicationResultAttemptRepository;
 import microservices.book.multiplication.repository.UserRepository;
@@ -22,6 +24,7 @@ public class MultiplicationServiceImpl implements MultiplicationService {
     private final MultiplicationResultAttemptRepository attemptRepository;
     private final UserRepository userRepository;
     private final MultiplicationRepository multiplicationRepository;
+    private final EventDispatcher eventDispatcher;
 
     @Override
     public Multiplication createMultiplicationObjectWithTwoRandomNum() {
@@ -48,6 +51,10 @@ public class MultiplicationServiceImpl implements MultiplicationService {
                         attempt.getResultAttempt(),
                         isCorrect);
         attemptRepository.save(checkedAttempt);
+        eventDispatcher.send(new MultiplicationSolvedEvent(checkedAttempt.getId(),
+                checkedAttempt.getUser().getId(),
+                checkedAttempt.isCorrect())
+        );
         return isCorrect;
     }
 
